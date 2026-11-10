@@ -28,23 +28,24 @@ const LOOK: Record<Theme, Look> = {
   field: { sky: ['#ffd88a', '#fff3d6'], far: '#f3cf72', mid: '#e8b84f', top: '#c6e58d', edge: '#84c669', body: '#eaa56c', dot: '#cf8254', plank: '#fdbe53', thorn: '#4e974c' },
   forest: { sky: ['#a7dcc0', '#e3f4e6'], far: '#6fae7a', mid: '#4e974c', top: '#4e974c', edge: '#2f6b45', body: '#b86542', dot: '#8a4a2e', plank: '#b86542', thorn: '#2f6b45' },
   river: { sky: ['#8cc8ff', '#dff1ff'], far: '#a9c7e6', mid: '#84c669', top: '#fec99c', edge: '#eaa56c', body: '#cf8254', dot: '#b86542', plank: '#5fb85a', thorn: '#4e974c' },
-  cave: { sky: ['#1b1426', '#2c2140'], far: '#2a2038', mid: '#3a2d52', top: '#8b9bb4', edge: '#52607c', body: '#3f3a56', dot: '#2e2a42', plank: '#8b9bb4', thorn: '#b48cff' },
-  snow: { sky: ['#bcd6f5', '#eef5ff'], far: '#e4ecf8', mid: '#ffffff', top: '#ffffff', edge: '#c0cbdc', body: '#8b9bb4', dot: '#6e7d99', plank: '#c0cbdc', thorn: '#cfe9ff' },
-  town: { sky: ['#ffb27a', '#ffe2c2'], far: '#e59a73', mid: '#c97a55', top: '#c0cbdc', edge: '#8b9bb4', body: '#a0705a', dot: '#7f5444', plank: '#e5484d', thorn: '#8b9bb4' },
-  city: { sky: ['#1f2742', '#3c4a6e'], far: '#2b3556', mid: '#36416a', top: '#8b9bb4', edge: '#52607c', body: '#3a4258', dot: '#2d3346', plank: '#8b9bb4', thorn: '#c0cbdc' },
+  cave: { sky: ['#1b1426', '#2c2140'], far: '#2a2038', mid: '#3a2d52', top: '#d2b8ff', edge: '#7a5cc0', body: '#5a4a80', dot: '#46396a', plank: '#e0e6f0', thorn: '#b48cff' },
+  snow: { sky: ['#bcd6f5', '#eef5ff'], far: '#e4ecf8', mid: '#ffffff', top: '#ffffff', edge: '#8bb0dc', body: '#6e7d99', dot: '#566480', plank: '#b86542', thorn: '#cfe9ff' },
+  town: { sky: ['#ffb27a', '#ffe2c2'], far: '#e59a73', mid: '#c97a55', top: '#ece6d2', edge: '#8b9bb4', body: '#a0705a', dot: '#7f5444', plank: '#e5484d', thorn: '#8b9bb4' },
+  city: { sky: ['#1f2742', '#3c4a6e'], far: '#2b3556', mid: '#36416a', top: '#ece6d2', edge: '#a7a9be', body: '#7a6a7e', dot: '#5e5064', plank: '#fdbe53', thorn: '#c0cbdc' },
 };
 
+// 땅 위 장식: 밟거나 부딪히는 것처럼 보이지 않게 풀·꽃·싹만 (상자·통·바위는 배경에만)
 const DECOR: Record<Theme, number[]> = {
-  farm: [K.sunflower, K.sack, K.bucket, K.cabbage, K.carrot, K.hay2],
-  field: [K.wheat, K.wheat2, K.wheat3, K.sunflower, K.sprout],
-  forest: [K.bush, K.berry, K.rock, K.sapling, K.grass],
-  river: [K.rock, K.grass, K.bush, K.sapling],
-  cave: [K.rock, K.rock2],
-  snow: [K.rock2, K.pineS],
-  town: [K.barrel, K.crate, K.sack, K.bucket, K.trough],
-  city: [K.crate, K.barrel, K.bucket],
+  farm: [K.sunflower, K.cabbage, K.carrot, K.grass, K.sprout],
+  field: [K.wheat, K.wheat2, K.wheat3, K.sprout],
+  forest: [K.grass, K.sapling, K.sprout],
+  river: [K.grass, K.sapling],
+  cave: [],
+  snow: [],
+  town: [K.grass, K.sunflower],
+  city: [],
 };
-const TREES: Record<Theme, number[]> = { farm: [K.pine, K.bush], field: [K.sunflower, K.wheat], forest: [K.pine, K.pineS], river: [K.bush, K.pineS], cave: [K.rock2], snow: [K.pineS, K.pine], town: [K.barrel, K.crate], city: [K.crate] };
+const TREES: Record<Theme, number[]> = { farm: [K.pine], field: [K.sunflower], forest: [K.pineS], river: [K.pineS], cave: [], snow: [K.pineS], town: [K.sunflower], city: [] };
 
 function hash(n: number): number { n = (n ^ 61) ^ (n >>> 16); n = n + (n << 3); n = n ^ (n >>> 4); n = Math.imul(n, 0x27d4eb2d); return (n ^ (n >>> 15)) >>> 0; }
 
@@ -102,6 +103,16 @@ export function drawBackground(g: CanvasRenderingContext2D, theme: Theme, camX: 
   } else if (theme === 'cave') {
     for (let i = 0; i < 6; i++) { const x = mid(i * 90); g.fillStyle = '#6b52a0'; g.beginPath(); g.moveTo(x, 150); g.lineTo(x + 6, 128); g.lineTo(x + 12, 150); g.fill(); g.fillStyle = '#9d7ce0'; g.fillRect(x + 5, 132, 2, 8); }
   }
+  haze(g, theme);
+}
+
+/** 배경을 한 겹 흐리게 덮어 앞쪽(땅·적·장애물)과 확실히 나눈다 */
+function haze(g: CanvasRenderingContext2D, theme: Theme): void {
+  const night = theme === 'cave' || theme === 'city';
+  g.fillStyle = night ? 'rgba(10,6,24,0.42)' : LOOK[theme].sky[1];
+  g.globalAlpha = night ? 1 : 0.42;
+  g.fillRect(0, 0, VW, VH);
+  g.globalAlpha = 1;
 }
 
 // ── 땅·판자·가시·물 ──
@@ -121,20 +132,24 @@ export function drawTiles(g: CanvasRenderingContext2D, w: World, t: number): voi
         g.fillStyle = L.top; g.fillRect(sx, sy, 16, 5);
         g.fillStyle = L.edge; g.fillRect(sx, sy + 5, 16, 1);
         if (w.stage.theme === 'farm' || w.stage.theme === 'field' || w.stage.theme === 'forest') { g.fillStyle = L.top; g.fillRect(sx + (h % 12), sy + 5, 3, 2); g.fillRect(sx + ((h >> 3) % 12), sy + 5, 2, 3); }
-        g.fillStyle = OUT; g.fillRect(sx, sy, 16, 1);
+        g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(sx, sy + 2, 16, 1);
+        g.fillStyle = OUT; g.fillRect(sx, sy, 16, 2);
       }
       g.fillStyle = OUT;
-      if (openL) g.fillRect(sx, sy, 1, 16);
-      if (openR) g.fillRect(sx + 15, sy, 1, 16);
-      if (openB) g.fillRect(sx, sy + 15, 16, 1);
+      if (openL) g.fillRect(sx, sy, 2, 16);
+      if (openR) g.fillRect(sx + 14, sy, 2, 16);
+      if (openB) g.fillRect(sx, sy + 14, 16, 2);
     } else if (c === '=') {
       if (w.stage.theme === 'river') { g.fillStyle = OUT; g.beginPath(); g.ellipse(sx + 8, sy + 3, 9, 3.5, 0, 0, 7); g.fill(); g.fillStyle = '#5fb85a'; g.beginPath(); g.ellipse(sx + 8, sy + 3, 8, 2.6, 0, 0, 7); g.fill(); g.fillStyle = '#ffa3b5'; g.fillRect(sx + 9, sy + 1, 2, 2); }
       else { g.fillStyle = OUT; g.fillRect(sx, sy, 16, 6); g.fillStyle = L.plank; g.fillRect(sx, sy + 1, 16, 4); g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(sx, sy + 4, 16, 1); g.fillStyle = OUT; g.fillRect(sx + 7, sy + 1, 1, 4); }
     } else if (c === '^') {
-      g.fillStyle = OUT;
-      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(sx + k * 4 - 1, sy + 16); g.lineTo(sx + k * 4 + 2, sy + 6 + (k % 2) * 2); g.lineTo(sx + k * 4 + 5, sy + 16); g.fill(); }
-      g.fillStyle = L.thorn;
-      for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(sx + k * 4, sy + 16); g.lineTo(sx + k * 4 + 2, sy + 8 + (k % 2) * 2); g.lineTo(sx + k * 4 + 4, sy + 16); g.fill(); }
+      g.fillStyle = OUT; g.fillRect(sx, sy + 11, 16, 5);
+      for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(sx + k * 5 - 1, sy + 13); g.lineTo(sx + k * 5 + 3, sy + 1 + (k % 2) * 2); g.lineTo(sx + k * 5 + 7, sy + 13); g.fill(); }
+      g.fillStyle = '#f4f4f2';
+      for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(sx + k * 5 + 0.5, sy + 12); g.lineTo(sx + k * 5 + 3, sy + 3.5 + (k % 2) * 2); g.lineTo(sx + k * 5 + 5.5, sy + 12); g.fill(); }
+      g.fillStyle = '#c0cbdc'; for (let k = 0; k < 3; k++) g.fillRect(sx + k * 5 + 3, sy + 6 + (k % 2) * 2, 1, 5);
+      g.fillStyle = '#e5484d'; g.fillRect(sx + 1, sy + 12, 14, 3);
+      g.fillStyle = '#ff8a8e'; g.fillRect(sx + 1, sy + 12, 14, 1);
     } else if (c === '~') {
       const top = gr.at(x, y - 1) !== '~';
       g.fillStyle = w.stage.theme === 'cave' ? '#2e4f8a' : '#5ab0e8'; g.fillRect(sx, sy + (top ? 4 : 0), 16, top ? 12 : 16);
@@ -151,7 +166,10 @@ export function drawThings(g: CanvasRenderingContext2D, w: World, pup: PupSprite
   for (const d of w.decor) {
     if (!vis(d.x)) continue;
     const list = d.kind === 'T' ? TREES[theme] : DECOR[theme];
+    if (!list.length) continue;
+    g.globalAlpha = 0.7;
     kenney(g, list[d.seed % list.length], d.x - cx, d.y - cy, 1, d.seed % 2 === 0);
+    g.globalAlpha = 1;
   }
   // 쉼터 (물그릇)
   for (const c of w.checks) {
@@ -178,7 +196,12 @@ export function drawThings(g: CanvasRenderingContext2D, w: World, pup: PupSprite
     const x = Math.round(p.x - cx), y = Math.round(p.y - cy) + (p.kind === '_' && p.fall > 0 && p.fall < 0.6 ? Math.round(Math.sin(t * 60)) : 0);
     g.fillStyle = OUT; g.fillRect(x, y, p.w, 7);
     if (theme === 'river' && p.kind === '-') { g.fillStyle = '#b86542'; g.fillRect(x + 1, y + 1, p.w - 2, 5); g.fillStyle = '#eaa56c'; g.fillRect(x + 1, y + 1, 3, 5); g.fillRect(x + p.w - 4, y + 1, 3, 5); }
-    else { g.fillStyle = p.kind === '_' ? '#c0cbdc' : LOOK[theme].plank; g.fillRect(x + 1, y + 1, p.w - 2, 4); g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(x + 1, y + 4, p.w - 2, 1); }
+    else if (p.kind === '_') {
+      // 무너지는 발판: 금 간 흙덩이
+      g.fillStyle = '#e8b878'; g.fillRect(x + 1, y + 1, p.w - 2, 5); g.fillStyle = '#fff1c8'; g.fillRect(x + 1, y + 1, p.w - 2, 1);
+      g.fillStyle = OUT; g.fillRect(x + 6, y + 2, 1, 3); g.fillRect(x + 7, y + 4, 2, 1); g.fillRect(x + p.w - 9, y + 1, 1, 3); g.fillRect(x + p.w - 8, y + 3, 1, 2);
+    }
+    else { g.fillStyle = LOOK[theme].plank; g.fillRect(x + 1, y + 1, p.w - 2, 4); g.fillStyle = 'rgba(255,255,255,0.4)'; g.fillRect(x + 1, y + 1, p.w - 2, 1); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x + 1, y + 4, p.w - 2, 1); g.fillStyle = OUT; g.fillRect(x + 3, y + 2, 2, 2); g.fillRect(x + p.w - 5, y + 2, 2, 2); }
   }
   // 물건
   for (const it of w.items) {
@@ -207,13 +230,16 @@ export function drawThings(g: CanvasRenderingContext2D, w: World, pup: PupSprite
     const curled = e.kind === 's' && e.stun > 0;
     const s = curled ? fr[2] : fr[e.stun > 0 ? 0 : Math.floor(t * 6 + e.phase) % 2];
     const x = Math.round(e.b.x + e.b.w / 2 - s.w / 2 - cx), y = Math.round(e.b.y + e.b.h - s.h - cy);
-    g.drawImage(e.dir > 0 ? s.l : s.r, x, y);
+    if (e.kind !== 'f' && e.kind !== 'd' && e.b.onGround) { g.fillStyle = 'rgba(40,20,30,0.28)'; g.beginPath(); g.ellipse(e.b.x + e.b.w / 2 - cx, e.b.y + e.b.h - cy, s.w / 2 - 1, 2, 0, 0, 7); g.fill(); }
+    g.drawImage(e.dir > 0 ? s.r : s.l, x, y);
+    if (e.alert > 0) txt(g, '!', e.b.x + e.b.w / 2 - cx, y - 6, '#ffe36b', 'center', 12);
     if (e.stun > 0) stars(g, e.b.x + e.b.w / 2 - cx, e.b.y - 4 - cy, t);
   }
   // 날아오는 것
   for (const q of w.proj) {
     const x = q.x - cx, y = q.y - cy;
     if (q.warn > 0) { g.fillStyle = 'rgba(63,38,49,0.35)'; g.beginPath(); g.ellipse(q.x + q.w / 2 - cx, (w.grid.h - 3) * TILE - cy, 7, 2, 0, 0, 7); g.fill(); continue; }
+    if (q.kind.startsWith('nut:')) { const s = frames(q.kind.slice(4))[Math.floor(t * 8) % 2]; g.drawImage(s.r, Math.round(x + q.w / 2 - s.w / 2), Math.round(y + q.h / 2 - s.h / 2)); continue; }
     if (q.kind.startsWith('roll:')) { const s = frames(q.kind.slice(5))[Math.floor(t * 8) % 2]; g.drawImage(s.r, Math.round(x + q.w / 2 - s.w / 2), Math.round(y + q.h - s.h)); continue; }
     if (q.kind === 'wave') { g.fillStyle = OUT; g.fillRect(x, y, q.w, q.h); g.fillStyle = '#fdbe53'; g.fillRect(x + 1, y + 1 + Math.round(Math.sin(t * 30)), q.w - 2, q.h - 2); continue; }
     if (q.kind === 'bubble') { g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.beginPath(); g.arc(x + 5, y + 5, 5, 0, 7); g.stroke(); g.fillStyle = 'rgba(190,230,255,0.6)'; g.fill(); continue; }
@@ -242,7 +268,11 @@ export function drawThings(g: CanvasRenderingContext2D, w: World, pup: PupSprite
     else pose = t % 3.2 < 0.12 ? 'blink' : Math.floor(t * 2) % 6 === 0 ? 'wag' : 'idle';
     const s = pup[pose];
     const x = Math.round(p.b.x + p.b.w / 2 - s.w / 2 + (p.dir > 0 ? 2 : -2) - cx), y = Math.round(p.b.y + p.b.h - s.h + 1 - cy);
-    g.drawImage(p.dir > 0 ? s.r : s.l, x, y);
+    if (p.flip > 0 && p.state === 'normal') {
+      // 2단 점프: 한 바퀴 빙글
+      const a = (1 - p.flip / 0.35) * Math.PI * 2 * p.dir;
+      g.save(); g.translate(x + s.w / 2, y + s.h / 2); g.rotate(a); g.drawImage(p.dir > 0 ? s.r : s.l, -s.w / 2, -s.h / 2); g.restore();
+    } else g.drawImage(p.dir > 0 ? s.r : s.l, x, y);
   }
   // 효과
   for (const f of w.fx) {
@@ -287,6 +317,17 @@ export function drawWeather(g: CanvasRenderingContext2D, w: World, t: number): v
     for (const c of w.checks) if (c.on) hole(c.x + 8 - w.cam.x, c.y + 8 - w.cam.y, 30);
     if (w.boss && w.locked) hole(w.boss.b.x + w.boss.b.w / 2 - w.cam.x, w.boss.b.y + w.boss.b.h / 2 - w.cam.y, 26);
     g.drawImage(darkCv, 0, 0);
+    // 어두워도 발 디딜 곳은 보이게: 땅·판자 윗면에 빛나는 이끼, 가시는 붉게
+    const gr = w.grid, cx = Math.floor(w.cam.x), cy = Math.floor(w.cam.y);
+    const x0 = Math.floor(cx / TILE) - 1, x1 = x0 + Math.ceil(VW / TILE) + 2;
+    for (let y = 0; y < gr.h; y++) for (let x = x0; x <= x1; x++) {
+      const c = gr.at(x, y), sx = x * TILE - cx, sy = y * TILE - cy;
+      if ((c === '#' || c === '=') && gr.at(x, y - 1) !== '#' && gr.at(x, y - 1) !== '=') {
+        g.fillStyle = 'rgba(190,160,255,0.55)'; g.fillRect(sx, sy, 16, 1);
+        if ((x * 7 + y) % 3 === 0) { g.fillStyle = `rgba(160,255,220,${0.5 + 0.3 * Math.sin(t * 2 + x)})`; g.fillRect(sx + 5, sy - 2, 2, 2); }
+      } else if (c === '^') { g.fillStyle = 'rgba(255,90,110,0.6)'; for (let k = 0; k < 3; k++) g.fillRect(sx + k * 5 + 3, sy + 3 + (k % 2) * 2, 1, 2); }
+    }
+    for (const pl of w.plats) if (pl.gone <= 0) { g.fillStyle = 'rgba(190,160,255,0.55)'; g.fillRect(Math.round(pl.x - cx), Math.round(pl.y - cy), pl.w, 1); }
   }
 }
 

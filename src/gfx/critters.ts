@@ -16,94 +16,121 @@ function make(w: number, h: number, draw: Draw, frames = 2): Sprite[] {
   return Array.from({ length: frames }, (_, f) => { const p = new Pix(w, h); draw(p, f); return sprite(p.outline()); });
 }
 
-// ── 작은 적 ──
+// ── 작은 적 ── (18~20px, 큰 눈 + 찡그린 눈썹 → 한눈에 '적')
 export const ENEMY: Record<string, Draw & { w: number; h: number }> = {} as never;
 function def(name: string, w: number, h: number, d: Draw): void { (ENEMY as Record<string, unknown>)[name] = Object.assign(d, { w, h }); }
+/** 적의 눈: 흰자 2×3 + 눈동자, 위에 찡그린 눈썹 (오른쪽을 봄) */
+function mad(p: Pix, x: number, y: number, pupil = EYE): void {
+  p.rect(x, y, 2, 3, W); p.rect(x + 1, y + 1, 1, 2, pupil);
+  p.set(x - 1, y - 1, OUT).set(x, y - 1, OUT).set(x + 1, y, OUT);
+}
 
-def('crow', 16, 12, (p, f) => {
-  p.oval(7, 7, 5, 3.5, '#2d2a3e'); p.oval(11.5, 5, 3, 2.8, '#2d2a3e');
-  p.poly([[14, 4], [16, 5.5], [14, 6]], '#fdbe53');
-  p.set(12, 4, W);
-  if (f === 0) p.poly([[4, 6], [9, 6], [6, 0]], '#46425e'); else p.poly([[4, 7], [9, 7], [6, 11]], '#46425e');
-  p.poly([[0, 6], [3, 7], [1, 9]], '#2d2a3e');
+def('crow', 20, 15, (p, f) => {
+  p.oval(9, 9, 6.5, 4.5, '#2d2a3e'); p.oval(15, 6.5, 3.6, 3.4, '#2d2a3e'); p.ovalOn(9, 11, 4, 2, '#46425e');
+  p.poly([[18, 5.5], [20, 7], [18, 8.5]], '#fdbe53');
+  mad(p, 15, 5);
+  if (f === 0) p.poly([[5, 8], [12, 8], [8, 0]], '#46425e'); else p.poly([[5, 9], [12, 9], [8, 15]], '#46425e');
+  p.poly([[0, 7], [4, 9], [1, 12]], '#2d2a3e'); p.set(10, 14, '#fdbe53').set(12, 14, '#fdbe53');
 });
-def('mouse', 14, 9, (p, f) => {
-  p.oval(6, 5.5, 5, 3, '#a7a9be'); p.oval(10.5, 4.5, 2.5, 2.2, '#a7a9be'); p.oval(9, 2, 1.5, 1.5, '#f5b0c0');
-  p.set(13, 5, '#f28462'); p.set(11, 4, EYE); p.line(0, 4 + f, 2, 6, '#f5b0c0');
-  p.set(4, 8, '#8b9bb4').set(8, 8 - f, '#8b9bb4');
+def('mouse', 18, 12, (p, f) => {
+  p.oval(8, 8, 6, 3.6, '#a7a9be'); p.oval(13.5, 6.5, 3.4, 3, '#a7a9be'); p.oval(11.5, 2.6, 2.4, 2.4, '#a7a9be'); p.ovalOn(11.5, 2.6, 1.3, 1.3, '#f5b0c0');
+  p.set(17, 7, '#f28462'); mad(p, 14, 5); p.ovalOn(8, 10, 4, 1.4, '#d4d6e4');
+  p.line(0, 4 + f * 2, 2, 8, '#f5b0c0'); p.set(5, 11, '#8b9bb4').set(10, 11 - f, '#8b9bb4');
 });
-def('grasshopper', 14, 10, (p, f) => {
-  p.oval(6, 6, 5, 2.4, '#7cc057'); p.oval(11, 5, 2.4, 2.2, '#7cc057'); p.set(11, 4, EYE);
-  p.line(4, 6, 2 + f, 1, '#4e974c'); p.line(5, 6, 8, 9, '#4e974c'); p.line(10, 3, 13, 0, '#4e974c');
+def('grasshopper', 18, 13, (p, f) => {
+  p.oval(8, 8, 6, 3, '#7cc057'); p.oval(14, 6.5, 3, 3, '#7cc057'); p.ovalOn(8, 9.5, 4.5, 1.2, '#c6e58d');
+  p.poly([[3, 8], [9, 7], [5 + f, 1 + f]], '#4e974c'); p.line(5 + f, 1 + f, 3, 12, '#4e974c');
+  p.line(14, 4, 17, 0, '#4e974c'); p.line(15, 4, 18, 1, '#4e974c'); mad(p, 14, 5);
 });
-def('squirrel', 14, 13, (p, f) => {
-  p.oval(3.5, 5 + f * 0.5, 3, 4.5, '#c97a45'); p.ovalOn(3.5, 5 + f * 0.5, 1.6, 3, '#e8a46b');
-  p.oval(8, 8, 3.5, 3.2, '#b86542'); p.oval(10.5, 5, 2.6, 2.4, '#b86542'); p.set(10, 2, '#b86542');
-  p.set(11, 4, EYE); p.set(13, 5, OUT); p.rect(7, 11, 2, 1, '#b86542');
+def('squirrel', 18, 16, (p, f) => {
+  p.oval(4.5, 6.5 + f * 0.5, 4, 6, '#c97a45'); p.ovalOn(4.5, 6.5 + f * 0.5, 2.2, 4, '#e8a46b');
+  p.oval(10.5, 11, 4.5, 4, '#b86542'); p.ovalOn(11.5, 12, 2.5, 2.5, '#f0c9a0');
+  p.oval(13.5, 6.5, 3.6, 3.4, '#b86542'); p.set(12, 2, '#b86542').set(12, 3, '#b86542'); p.set(15, 3, '#b86542');
+  mad(p, 14, 5); p.set(17, 7, OUT); p.oval(15, 9, 1, 0.8, '#ffa3b5');
+  p.rect(9, 15, 2, 1, '#8a4a2e').rect(13, 15, 2, 1, '#8a4a2e');
 });
-def('owl', 14, 13, (p, f) => {
-  p.oval(7, 7, 5.5, 5.5, '#9a6a4a'); p.ovalOn(7, 9, 3.5, 3, '#d9b48a');
-  p.oval(5, 5, 1.8, 1.8, W).oval(9, 5, 1.8, 1.8, W).set(5, 5, EYE).set(9, 5, EYE); p.set(7, 7, '#fdbe53');
-  p.set(2, 1, '#9a6a4a').set(12, 1, '#9a6a4a');
-  if (f) { p.rect(0, 6, 2, 4, '#7a4f35'); p.rect(12, 6, 2, 4, '#7a4f35'); } else { p.rect(0, 4, 2, 4, '#7a4f35'); p.rect(12, 4, 2, 4, '#7a4f35'); }
+def('owl', 18, 17, (p, f) => {
+  p.oval(9, 9.5, 7, 7, '#9a6a4a'); p.ovalOn(9, 12, 4.5, 4, '#d9b48a');
+  p.oval(6, 7, 2.6, 2.6, '#ffe9a8').oval(12, 7, 2.6, 2.6, '#ffe9a8'); p.rect(6, 6, 1, 2, EYE).rect(12, 6, 1, 2, EYE);
+  p.line(4, 4, 7, 5, OUT); p.line(14, 4, 11, 5, OUT); p.poly([[8, 9], [10, 9], [9, 11]], '#fdbe53');
+  p.poly([[2, 1], [5, 3], [3, 5]], '#7a4f35'); p.poly([[16, 1], [13, 3], [15, 5]], '#7a4f35');
+  const wy = f ? 10 : 7; p.rect(0, wy, 3, 5, '#7a4f35'); p.rect(15, wy, 3, 5, '#7a4f35');
 });
-def('crab', 16, 10, (p, f) => {
-  p.oval(8, 6, 6, 3.4, '#e5484d'); p.set(6, 3, EYE).set(10, 3, EYE); p.set(6, 2, '#e5484d').set(10, 2, '#e5484d');
-  p.oval(1.8, 3 - f, 1.8, 1.6, '#e5484d'); p.oval(14.2, 3 - f, 1.8, 1.6, '#e5484d');
-  for (const x of [4, 7, 9, 12]) p.set(x, 9, '#c34b35');
+def('crab', 20, 13, (p, f) => {
+  p.oval(10, 8.5, 7, 4, '#e5484d'); p.ovalOn(10, 10.5, 5, 1.6, '#ff8a8e');
+  p.rect(7, 2, 1, 4, '#c34b35').rect(12, 2, 1, 4, '#c34b35'); p.rect(6, 1, 2, 2, W).set(7, 2, EYE).rect(12, 1, 2, 2, W).set(12, 2, EYE);
+  p.oval(2, 4 - f, 2.4, 2.2, '#e5484d'); p.oval(18, 4 - f, 2.4, 2.2, '#e5484d'); p.set(1, 3 - f, OUT).set(19, 3 - f, OUT);
+  for (const x of [5, 8, 12, 15]) p.set(x, 12, '#c34b35');
 });
-def('frog', 14, 10, (p, f) => {
-  p.oval(7, 6.5 - f, 6, 3.4, '#5fb85a'); p.oval(4.5, 3 - f, 1.8, 1.8, '#5fb85a'); p.oval(9.5, 3 - f, 1.8, 1.8, '#5fb85a');
-  p.set(4, 3 - f, EYE).set(9, 3 - f, EYE); p.ovalOn(7, 8 - f, 4, 1.2, '#c6e58d'); p.line(4, 6 - f, 10, 6 - f, '#3e7d3a');
-  if (f) { p.line(1, 8, 0, 9, '#5fb85a'); p.line(13, 8, 13, 9, '#5fb85a'); }
+def('frog', 18, 13, (p, f) => {
+  p.oval(9, 8.5 - f, 7, 4, '#5fb85a'); p.oval(5.5, 4 - f, 2.6, 2.6, '#5fb85a'); p.oval(12.5, 4 - f, 2.6, 2.6, '#5fb85a');
+  p.rect(5, 3 - f, 2, 2, W).set(6, 4 - f, EYE); p.rect(12, 3 - f, 2, 2, W).set(13, 4 - f, EYE); p.line(4, 1 - f, 6, 2 - f, OUT); p.line(14, 1 - f, 12, 2 - f, OUT);
+  p.ovalOn(9, 10.5 - f, 5, 1.8, '#c6e58d'); p.line(6, 8 - f, 12, 8 - f, '#3e7d3a');
+  if (f) { p.line(2, 10, 0, 12, '#5fb85a'); p.line(16, 10, 17, 12, '#5fb85a'); } else { p.rect(2, 11, 3, 2, '#5fb85a'); p.rect(13, 11, 3, 2, '#5fb85a'); }
 });
-def('dragonfly', 16, 9, (p, f) => {
-  p.line(1, 5, 11, 5, '#3e9bd8'); p.oval(12.5, 5, 2, 1.8, '#3e9bd8'); p.set(13, 4, EYE);
-  const a = f ? 1 : 3; p.oval(6, a, 3, 1.3, '#cfe9ff'); p.oval(9, a, 3, 1.3, '#cfe9ff');
+def('dragonfly', 20, 12, (p, f) => {
+  p.line(1, 7, 13, 7, '#3e9bd8'); p.line(1, 8, 12, 8, '#2b7bb8'); p.oval(15.5, 7, 2.8, 2.6, '#3e9bd8'); mad(p, 16, 6);
+  const a = f ? 1 : 4; p.oval(7, a, 4, 1.6, '#cfe9ff'); p.oval(11, a, 4, 1.6, '#cfe9ff'); p.oval(7, 11 - a + 1, 3, 1.2, '#e8f4ff');
 });
-def('mole', 14, 10, (p, f) => {
-  p.oval(7, 6, 6, 3.6, '#6b4a3a'); p.oval(12, 6, 1.6, 1.4, '#f5a0b8'); p.set(9, 4, EYE);
-  p.rect(2 + f, 9, 2, 1, '#f5a0b8').rect(8 - f, 9, 2, 1, '#f5a0b8');
+def('mole', 18, 13, (p, f) => {
+  p.oval(9, 8, 7.5, 4.8, '#6b4a3a'); p.ovalOn(9, 10.5, 5, 2, '#8a6a58'); p.oval(16, 8, 2, 1.8, '#f5a0b8'); mad(p, 12, 5);
+  p.rect(3 + f, 12, 3, 1, '#f5a0b8').rect(11 - f, 12, 3, 1, '#f5a0b8'); p.set(9, 3, '#8a6a58');
 });
-def('slime', 14, 10, (p, f) => {
-  p.oval(7, 6.5 + f * 0.5, 6 + f * 0.6, 3.5 - f * 0.5, '#9b6bd6'); p.ovalOn(5, 4.5, 2, 1, '#c8a6f0');
-  p.set(5, 6, EYE).set(9, 6, EYE);
+def('slime', 18, 13, (p, f) => {
+  p.oval(9, 8.5 + f * 0.5, 7.5 + f * 0.8, 4.6 - f * 0.6, '#9b6bd6'); p.set(9, 3 + f, '#9b6bd6').set(9, 2 + f, '#9b6bd6');
+  p.ovalOn(6, 6.5, 2.4, 1.4, '#c8a6f0'); p.set(5, 6, W);
+  mad(p, 7, 7 + f); mad(p, 11, 7 + f); p.line(8, 11 + f, 11, 11 + f, '#5a3a90');
 });
-def('bat', 16, 9, (p, f) => {
-  p.oval(8, 4.5, 2.5, 2.5, '#5a4380'); p.set(7, 1.5, '#5a4380').set(9, 1.5, '#5a4380'); p.set(7, 4, '#ff5a6e').set(9, 4, '#ff5a6e');
-  if (f) { p.poly([[6, 4], [0, 1], [2, 6]], '#5a4380'); p.poly([[10, 4], [16, 1], [14, 6]], '#5a4380'); }
-  else { p.poly([[6, 4], [0, 7], [3, 3]], '#5a4380'); p.poly([[10, 4], [16, 7], [13, 3]], '#5a4380'); }
+def('bat', 20, 12, (p, f) => {
+  p.oval(10, 6, 3.2, 3.2, '#5a4380'); p.set(8, 2, '#5a4380').set(12, 2, '#5a4380'); p.set(8, 5, '#ff5a6e').set(12, 5, '#ff5a6e'); p.line(7, 4, 9, 4, OUT); p.line(13, 4, 11, 4, OUT);
+  p.set(9, 9, W).set(11, 9, W);
+  if (f) { p.poly([[7, 6], [0, 2], [2, 8]], '#5a4380'); p.poly([[13, 6], [20, 2], [18, 8]], '#5a4380'); }
+  else { p.poly([[7, 6], [0, 10], [4, 4]], '#5a4380'); p.poly([[13, 6], [20, 10], [16, 4]], '#5a4380'); }
 });
-def('rabbit', 14, 13, (p, f) => {
-  p.oval(6, 9 - f, 4.5, 3.2, '#f4f4f2'); p.oval(10, 7 - f, 2.8, 2.6, '#f4f4f2');
-  p.oval(9, 3 - f, 0.9, 2.6, '#f4f4f2'); p.oval(11, 3 - f, 0.9, 2.6, '#f4f4f2'); p.set(9, 3 - f, '#f5b0c0');
-  p.set(11, 6 - f, EYE); p.set(12, 8 - f, '#f5a0b8'); p.oval(1.6, 8 - f, 1.2, 1.2, W);
+def('rabbit', 18, 17, (p, f) => {
+  p.oval(8, 12.5 - f, 6, 4.2, '#f4f4f2'); p.ovalOn(8, 14.5 - f, 4, 1.4, '#dde3ee');
+  p.oval(12.5, 8.5 - f, 4, 3.6, '#f4f4f2');
+  p.oval(11, 3.5 - f, 1.4, 3.6, '#f4f4f2'); p.oval(14, 3.5 - f, 1.4, 3.6, '#f4f4f2'); p.rect(11, 2 - f, 1, 3, '#f5b0c0'); p.rect(14, 2 - f, 1, 3, '#f5b0c0');
+  mad(p, 13, 7 - f, '#e5484d'); p.set(16, 10 - f, '#f5a0b8'); p.oval(2, 11.5 - f, 1.6, 1.6, W);
+  p.rect(5, 16, 3, 1, '#dde3ee').rect(11, 16 - f, 3, 1, '#dde3ee');
+})
+def('rat', 20, 12, (p, f) => {
+  p.oval(9, 7.5, 6.5, 4, '#7f7f95'); p.oval(15, 6.5, 3.4, 3, '#7f7f95'); p.oval(13, 2.8, 2, 2, '#7f7f95'); p.ovalOn(13, 2.8, 1, 1, '#c49aa8');
+  p.set(19, 7, '#f28462'); mad(p, 15, 5, '#e5484d'); p.ovalOn(9, 10, 4.5, 1.2, '#a7a9be');
+  p.line(0, 4 + f * 2, 3, 8, '#c49aa8'); p.set(6, 11, '#52607c').set(12, 11 - f, '#52607c');
 });
-def('rat', 16, 9, (p, f) => {
-  p.oval(7, 5.5, 5, 3, '#7f7f95'); p.oval(11.6, 4.8, 2.6, 2.2, '#7f7f95'); p.oval(10, 2.2, 1.4, 1.4, '#c49aa8');
-  p.set(14, 5, '#f28462'); p.set(12, 4, '#ff5a6e'); p.line(0, 3 + f * 2, 2, 6, '#c49aa8');
-  p.set(5, 8, '#52607c').set(9, 8 - f, '#52607c');
+def('pigeon', 19, 15, (p, f) => {
+  p.oval(8.5, 9, 6.5, 4.4, '#8b9bb4'); p.oval(14, 5.6, 3.4, 3.2, '#8b9bb4'); p.ovalOn(12.5, 8.5, 2.6, 2, '#6fb7a8'); p.ovalOn(8, 11, 4, 1.4, '#c0cbdc');
+  p.set(18, 6, '#f28462'); mad(p, 14, 4, '#e5484d');
+  if (f === 0) p.poly([[4, 8], [11, 8], [7, 0]], '#c0cbdc'); else p.poly([[4, 9], [11, 9], [7, 15]], '#c0cbdc');
+  p.set(8, 14, '#f28462').set(10, 14, '#f28462');
 });
-def('pigeon', 16, 12, (p, f) => {
-  p.oval(7, 7, 5, 3.4, '#8b9bb4'); p.oval(11.4, 4.6, 2.6, 2.4, '#8b9bb4'); p.ovalOn(10, 7, 2, 1.4, '#6fb7a8');
-  p.set(14, 5, '#f28462'); p.set(12, 4, '#ff5a6e');
-  if (f === 0) p.poly([[4, 6], [9, 6], [6, 0]], '#c0cbdc'); else p.poly([[4, 7], [9, 7], [6, 11]], '#c0cbdc');
+def('hedgehog', 20, 14, (p, f) => {
+  if (f === 2) { p.oval(10, 8, 7, 6, '#8a5a3c'); for (let a = 0; a < 14; a++) { const x = 10 + Math.cos(a / 14 * 6.283) * 8, y = 8 + Math.sin(a / 14 * 6.283) * 7; p.set(x, y, '#f4f4f2'); } p.ovalOn(10, 8, 3, 2.5, '#5c3a26'); return; }
+  p.oval(9, 9, 7.5, 4.6, '#8a5a3c');
+  for (let x = 2; x < 15; x += 3) { p.poly([[x, 7], [x + 3, 7], [x + 1.5, 1 + (x % 2)]], '#5c3a26'); p.set(x + 1.5, 2 + (x % 2), '#f4f4f2'); }
+  p.oval(15.5, 9.5, 3, 2.6, '#e8c8a0'); mad(p, 15, 8); p.set(19, 10, OUT);
+  p.set(6, 13 - f, '#5c3a26').set(12, 13, '#5c3a26');
 });
-def('hedgehog', 16, 11, (p, f) => {
-  if (f === 2) { p.oval(8, 6, 5.5, 5, '#8a5a3c'); for (let a = 0; a < 12; a++) p.set(8 + Math.cos(a / 2) * 6.5, 6 + Math.sin(a / 2) * 5.5, '#5c3a26'); return; }
-  p.oval(7, 7, 6, 3.6, '#8a5a3c'); for (let x = 2; x < 12; x += 2) p.poly([[x, 5], [x + 2, 5], [x + 1, 1 + (x % 4 ? 0 : 1)]], '#5c3a26');
-  p.oval(12.5, 7.5, 2.2, 2, '#e8c8a0'); p.set(13, 7, EYE).set(15, 8, OUT);
-  p.set(5, 10 - f, '#5c3a26').set(9, 10, '#5c3a26');
+def('chick', 14, 13, (p, f) => {
+  p.oval(7, 8 - f * 0.5, 6, 4.6, '#ffe36b'); p.ovalOn(4.5, 8.5, 2.6, 1.8, '#f5c842');
+  mad(p, 9, 5); p.poly([[12, 6.5], [14, 7.5], [12, 8.5]], '#f28462');
+  p.set(6, 3 - f, '#ffe36b').set(7, 2 - f, '#ffe36b');
+  p.set(5, 12, '#f28462').set(9, 12 - f, '#f28462');
 });
-
-def('chick', 12, 11, (p, f) => {
-  p.oval(6, 6.5 - f * 0.5, 5, 4, '#ffe36b'); p.ovalOn(4, 7, 2.2, 1.6, '#f5c842');
-  p.set(8, 4, EYE); p.poly([[10, 5], [12, 6], [10, 7]], '#f28462');
-  p.set(5, 2 - f, '#ffe36b').set(6, 1 - f, '#ffe36b');
-  p.set(4, 10, '#f28462').set(8, 10 - f, '#f28462');
+def('raccoon', 18, 16, (p, f) => {
+  p.oval(4, 8 + f * 0.5, 3.4, 5.5, '#8b9bb4'); for (let y = 4; y < 14; y += 3) p.line(1, y + f * 0.5, 7, y + f * 0.5, '#52607c');
+  p.oval(10.5, 11, 4.5, 4, '#8b9bb4'); p.ovalOn(11, 12, 2.6, 2.4, '#c0cbdc');
+  p.oval(13.5, 6, 3.8, 3.4, '#8b9bb4'); p.set(11, 2, '#8b9bb4').set(15, 2, '#8b9bb4');
+  p.rect(11, 5, 6, 2, '#3a4258'); p.rect(14, 5, 2, 2, W).set(15, 6, EYE); p.line(13, 3, 16, 4, OUT); p.set(17, 7, OUT);
+  p.rect(9, 15, 2, 1, '#52607c').rect(13, 15, 2, 1, '#52607c');
 });
 
 // ── 떨어지는 것·굴러오는 것·수집품 ──
+def('acorn', 8, 9, (p, f) => { p.oval(4, 5.5, 3.2, 3.4, '#c97a45'); p.rect(1, 1, 6, 3, '#7a4428'); p.set(4, 0, '#7a4428'); if (f) p.set(3, 5, '#e8a46b'); else p.set(5, 6, '#e8a46b'); });
+def('pebble', 7, 6, (p) => { p.oval(3.5, 3, 3.2, 2.6, '#a7a9be'); p.set(2, 2, '#e0e6f0'); });
+def('snowbit', 8, 8, (p, f) => { p.oval(4, 4, 3.4, 3.4, '#ffffff'); p.ovalOn(5, 5, 2, 2, '#dde8f6'); p.set(2 + f, 2, '#c0cbdc'); });
+def('drop', 6, 8, (p) => { p.poly([[3, 0], [6, 5], [3, 8], [0, 5]], '#5ab0e8'); p.oval(3, 5, 2.6, 2.6, '#5ab0e8'); p.set(2, 4, '#ffffff'); });
 def('egg', 10, 12, (p, f) => { p.oval(5, 6.5, 4, 5, '#fff8ec'); p.ovalOn(3.5, 4.5, 1.2, 1.8, W); if (f) p.line(3, 6, 7, 6, '#d9c7a8'); });
 def('barrel', 14, 14, (p, f) => { p.oval(7, 7, 6.4, 6.4, '#b86542'); p.oval(7, 7, 3.6, 3.6, '#d9925a'); p.line(1, 7, 13, 7, '#7a4428'); p.line(7, 1, 7, 13, '#7a4428'); if (f) { p.line(3, 3, 11, 11, '#7a4428'); p.line(3, 11, 11, 3, '#7a4428'); } });
 def('hay', 16, 14, (p, f) => { p.oval(8, 7, 7.4, 6.6, '#f5c842'); p.ovalOn(8, 7, 4, 3.6, '#e0a830'); p.set(8 + (f ? 2 : -2), 3, '#fff1a0').set(8 + (f ? -2 : 2), 11, '#fff1a0'); });

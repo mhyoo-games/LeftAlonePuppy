@@ -8,11 +8,11 @@ export interface Input { left: boolean; right: boolean; down: boolean; jump: boo
 export type PlayerState = 'normal' | 'hurt' | 'dead' | 'win';
 export interface Player {
   b: Body; dir: 1 | -1; hp: number; maxHp: number; inv: number; barkT: number; barkCd: number;
-  coyote: number; buffer: number; cut: boolean; drop: number; state: PlayerState; t: number; anim: number;
-  safeX: number; safeY: number; safeT: number; onPlat: Plat | null;
+  coyote: number; buffer: number; air: number; cut: boolean; drop: number; state: PlayerState; t: number; anim: number;
+  safeX: number; safeY: number; safeT: number; onPlat: Plat | null; flip: number;
 }
 export interface Enemy {
-  kind: 'w' | 'h' | 'f' | 'd' | 'r' | 's'; look: string; b: Body; dir: 1 | -1; t: number; stun: number;
+  kind: 'w' | 'h' | 'f' | 'd' | 'r' | 's' | 't'; look: string; b: Body; dir: 1 | -1; t: number; stun: number; alert: number;
   dead: boolean; ax: number; ay: number; phase: number; respawn: number; state: string;
 }
 export interface Item { kind: 'bone' | 'heart' | 'memory' | 'firefly'; x: number; y: number; got: boolean; t: number }
@@ -37,6 +37,9 @@ export function josa(word: string, withFinal: string, without: string): string {
   const has = c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
   return word + (has ? withFinal : without);
 }
+
+/** 던지는 적의 모습 → 던지는 것 */
+const THROWN: Record<string, string> = { squirrel: 'acorn', chick: 'acorn', frog: 'drop', mole: 'pebble', rabbit: 'snowbit', raccoon: 'pebble', owl: 'acorn' };
 
 export class World {
   stage: Stage;
@@ -94,12 +97,12 @@ export class World {
         }
         case 'D': case 'T': this.decor.push({ x: cx, y: cy, kind: c, seed: x * 31 + y * 7 }); break;
         case 'X': this.spawnBoss(cx, cy); break;
-        case 'w': case 'h': case 'f': case 'd': case 'r': case 's': this.spawnEnemy(c, cx, cy); break;
+        case 'w': case 'h': case 'f': case 'd': case 'r': case 's': case 't': this.spawnEnemy(c, cx, cy); break;
       }
     }
     this.p = {
       b: { x: px + 1, y: py + 2, w: 14, h: 14, vx: 0, vy: 0, onGround: false }, dir: 1, hp: 3, maxHp: 3, inv: 0, barkT: 0, barkCd: 0,
-      coyote: 0, buffer: 0, cut: false, drop: 0, state: 'normal', t: 0, anim: 0, safeX: px, safeY: py, safeT: 0, onPlat: null,
+      coyote: 0, buffer: 0, air: 1, cut: false, drop: 0, state: 'normal', t: 0, anim: 0, safeX: px, safeY: py, safeT: 0, onPlat: null, flip: 0,
     };
     this.respawnX = px; this.respawnY = py;
     this.cam.x = Math.max(0, px - viewW / 3);
@@ -108,9 +111,9 @@ export class World {
 
   private spawnEnemy(c: Enemy['kind'], x: number, y: number): void {
     const look = this.stage.look[c];
-    const size: Record<string, [number, number]> = { w: [13, 9], h: [12, 9], f: [14, 10], d: [9, 12], r: [14, 14], s: [14, 9] };
+    const size: Record<string, [number, number]> = { w: [15, 11], h: [14, 11], f: [16, 11], d: [9, 12], r: [14, 14], s: [16, 11], t: [14, 13] };
     const [w, h] = size[c];
-    this.enemies.push({ kind: c, look, b: { x: x + (16 - w) / 2, y: y + 16 - h, w, h, vx: 0, vy: 0, onGround: false }, dir: -1, t: Math.random() * 2, stun: 0, dead: false, ax: x, ay: y, phase: x * 0.13, respawn: 0, state: c === 'd' ? 'hang' : c === 'r' ? 'spawner' : 'go' });
+    this.enemies.push({ kind: c, look, b: { x: x + (16 - w) / 2, y: y + 16 - h, w, h, vx: 0, vy: 0, onGround: false }, dir: -1, t: Math.random() * 2, stun: 0, alert: 0, dead: false, ax: x, ay: y, phase: x * 0.13, respawn: 0, state: c === 'd' ? 'hang' : c === 'r' ? 'spawner' : 'go' });
   }
 
   private spawnBoss(x: number, y: number): void {
@@ -190,11 +193,17 @@ export class World {
     // 점프 (땅을 막 벗어나도·땅에 닿기 직전에 눌러도 되게)
     p.coyote = b.onGround ? PHYS.coyote : p.coyote - dt;
     p.buffer = inp.jumpPressed ? PHYS.buffer : p.buffer - dt;
+    if (b.onGround) p.air = 1;
     if (p.buffer > 0 && p.coyote > 0 && !hurtLock) {
       if (inp.down && this.onOneway()) { p.drop = 0.25; }
       else { b.vy = -PHYS.jump; p.cut = false; this.ev('jump'); this.puff('dust', b.x + b.w / 2, b.y + b.h, 3); }
       p.buffer = 0; p.coyote = 0; b.onGround = false;
+    } else if (inp.jumpPressed && p.coyote <= 0 && p.air > 0 && !hurtLock) {
+      // 2단 점프 (공중에서 한 번 더)
+      p.air--; p.buffer = 0; b.vy = -PHYS.jump2; p.cut = false; p.flip = 0.35;
+      this.ev('jump2'); this.puff('spark', b.x + b.w / 2, b.y + b.h, 6, { color: '#fff4de', vy: 40 });
     }
+    p.flip = Math.max(0, p.flip - dt);
     if (!inp.jump && b.vy < 0 && !p.cut) { b.vy *= PHYS.jumpCut; p.cut = true; }
     // 짖기
     if (inp.barkPressed && p.barkCd <= 0) { p.barkT = 0.32; p.barkCd = 0.5; this.ev('bark'); this.bark(); }
@@ -216,7 +225,7 @@ export class World {
     // 스프링
     for (const s of this.springs) {
       if (b.vy >= 0 && overlap(b, { x: s.x + 1, y: s.y - 2, w: 14, h: 8 }) && prevBottom <= s.y + 4) {
-        b.y = s.y - b.h; b.vy = -PHYS.spring; p.cut = true; s.squash = 1; this.ev('spring');
+        b.y = s.y - b.h; b.vy = -PHYS.spring; p.cut = true; p.air = 1; s.squash = 1; this.ev('spring');
       }
     }
     // 보스 방 잠금
@@ -257,6 +266,7 @@ export class World {
       if (e.dead || e.kind === 'r' || e.kind === 'd') continue;
       if (overlap(box, e.b)) { e.stun = e.kind === 's' ? 2.6 : 1.8; this.puff('star', e.b.x + e.b.w / 2, e.b.y, 3); }
     }
+    for (const q of this.proj) if (!q.dead && q.kind.startsWith('nut:') && overlap(box, q)) { q.dead = true; this.puff('poof', q.x + q.w / 2, q.y + q.h / 2, 4); }
     const bo = this.boss;
     if (bo && bo.hp > 0 && bo.awake && overlap({ ...box, x: box.x - 30 * (p.dir > 0 ? 0 : 1), w: box.w + 30, y: box.y - 20, h: box.h + 30 }, bo.b)) this.bossBarked(bo);
   }
@@ -305,30 +315,79 @@ export class World {
       e.stun = Math.max(0, e.stun - dt);
       const b = e.b;
       switch (e.kind) {
-        case 'w': case 's':
+        case 'w': case 's': {
+          // 콩이를 보면 '!' 하고 쫓아온다 (같은 높이, 앞뒤 80px)
+          const dx = p.b.x - b.x, seen = Math.abs(dx) < 84 && Math.abs(p.b.y - b.y) < 22 && p.state === 'normal';
+          if (!st && seen && e.state !== 'chase' && e.alert <= 0) { e.state = 'chase'; e.alert = 0.5; e.t = 0; e.dir = dx > 0 ? 1 : -1; b.vy = -90; }
+          if (e.state === 'chase' && (e.t > 2.2 || !seen && e.t > 0.8)) { e.state = 'go'; e.alert = -1.2; }
+          e.alert = e.alert > 0 ? Math.max(0, e.alert - dt) : Math.min(0, e.alert + dt);
           if (!st) {
-            b.vx = e.dir * (e.kind === 's' ? 22 : 30);
-            if (b.onGround && !groundAhead(b, e.dir, this.grid)) { e.dir = -e.dir as 1 | -1; b.vx = 0; }
+            const chase = e.state === 'chase' && e.alert <= 0;
+            if (chase) e.dir = dx > 0 ? 1 : -1;
+            b.vx = e.dir * (chase ? (e.kind === 's' ? 48 : 64) : e.kind === 's' ? 22 : 30);
+            if (e.alert > 0) b.vx = 0;
+            if (b.onGround && !groundAhead(b, e.dir, this.grid)) { if (chase) b.vx = 0; else { e.dir = -e.dir as 1 | -1; b.vx = 0; } }
           } else b.vx = 0;
           b.vy = Math.min(PHYS.maxFall, b.vy + PHYS.gravity * dt);
-          if (moveBody(b, dt, this.grid).wall) e.dir = -e.dir as 1 | -1;
+          if (moveBody(b, dt, this.grid).wall && e.state !== 'chase') e.dir = -e.dir as 1 | -1;
           break;
+        }
         case 'h':
           b.vy = Math.min(PHYS.maxFall, b.vy + PHYS.gravity * dt);
           if (!st && b.onGround) {
             b.vx = 0;
-            if (e.t > 1.4) { e.t = 0; e.dir = p.b.x < b.x ? -1 : 1; b.vy = -250; b.vx = e.dir * 55; }
+            const near = Math.abs(p.b.x - b.x) < 120;
+            if (e.t > (near ? 0.9 : 1.6)) { e.t = 0; e.dir = p.b.x < b.x ? -1 : 1; b.vy = near ? -300 : -230; b.vx = e.dir * (near ? 80 : 45); }
           }
           if (moveBody(b, dt, this.grid).wall) b.vx = -b.vx;
           break;
         case 'f':
           if (!st) {
-            e.phase += dt;
-            b.x = e.ax + Math.sin(e.phase * 0.9) * 46;
-            b.y = e.ay - 6 + Math.sin(e.phase * 2.3) * 7;
-            e.dir = Math.cos(e.phase * 0.9) > 0 ? 1 : -1;
+            if (e.state === 'swoop') {
+              // 콩이 쪽으로 내리꽂았다가
+              b.x += b.vx * dt; b.y += b.vy * dt;
+              if (e.t > 0.55 || this.grid.solid(Math.floor((b.x + b.w / 2) / TILE), Math.floor((b.y + b.h) / TILE))) { e.state = 'back'; e.t = 0; }
+            } else if (e.state === 'back') {
+              // 제자리로 돌아감
+              const tx = e.ax + Math.sin(e.phase * 0.9) * 46, ty = e.ay - 6;
+              b.x += (tx - b.x) * Math.min(1, dt * 3); b.y += (ty - b.y) * Math.min(1, dt * 3);
+              if (e.t > 1.4) { e.state = 'go'; e.t = 0; }
+            } else if (e.state !== 'aim') {
+              e.phase += dt;
+              b.x = e.ax + Math.sin(e.phase * 0.9) * 46;
+              b.y = e.ay - 6 + Math.sin(e.phase * 2.3) * 7;
+              e.dir = Math.cos(e.phase * 0.9) > 0 ? 1 : -1;
+              const dx = p.b.x + p.b.w / 2 - (b.x + b.w / 2), dy = p.b.y - b.y;
+              if (e.t > 2 && Math.abs(dx) < 56 && dy > 10 && dy < 110 && p.state === 'normal') { e.state = 'aim'; e.t = 0; e.alert = 0.45; }
+            }
+            if (e.state === 'aim') {
+              // 덮치기 전에 잠깐 멈춰 '!' (피할 틈)
+              b.y = e.ay - 6 - Math.min(1, e.t * 3) * 4;
+              if (e.t > 0.45) {
+                const dx = p.b.x + p.b.w / 2 - (b.x + b.w / 2), dy = p.b.y - b.y;
+                e.state = 'swoop'; e.t = 0; this.ev('swoop');
+                const l = Math.hypot(dx, dy) || 1; b.vx = (dx / l) * 170; b.vy = (Math.max(20, dy) / l) * 170; e.dir = dx > 0 ? 1 : -1;
+              }
+            }
+            e.alert = Math.max(0, e.alert - dt);
           }
           break;
+        case 't': {
+          // 던지는 적: 콩이가 보이면 포물선으로 던진다
+          b.vy = Math.min(PHYS.maxFall, b.vy + PHYS.gravity * dt); b.vx = 0; moveBody(b, dt, this.grid);
+          const dx = p.b.x + p.b.w / 2 - (b.x + b.w / 2);
+          if (!st) {
+            e.dir = dx > 0 ? 1 : -1;
+            if (Math.abs(dx) < 170 && Math.abs(p.b.y - b.y) < 90 && e.t > 2.1 && p.state === 'normal') {
+              e.t = 0; e.alert = 0.35;
+              const T = 0.85, vx = Math.max(-150, Math.min(150, dx / T)), vy = (p.b.y - b.y - 0.5 * 700 * T * T) / T;
+              this.proj.push({ kind: 'nut:' + (THROWN[e.look] ?? 'pebble'), x: b.x + b.w / 2 - 4, y: b.y - 2, w: 8, h: 8, vx, vy: Math.max(-330, vy), grav: 700, life: 3, warn: 0, dead: false });
+              this.ev('throw');
+            }
+          }
+          e.alert = Math.max(0, e.alert - dt);
+          break;
+        }
         case 'd': {
           if (e.state === 'hang') {
             b.x = e.ax + 3; b.y = e.ay + 4;
@@ -363,7 +422,7 @@ export class World {
       const stomp = p.b.vy > 40 && p.b.y + p.b.h - b.y < 10;
       if (stomp && (e.kind !== 's' || st)) {
         e.dead = true; e.respawn = e.kind === 'd' ? 3 : 0;
-        p.b.vy = -(PHYS.jump * 0.78); p.cut = false; this.bones += 0;
+        p.b.vy = -(PHYS.jump * 0.78); p.cut = false; p.air = 1;
         this.puff('star', b.x + b.w / 2, b.y, 5); this.ev('stomp');
       } else if (!st || e.kind === 'd') this.hurt(b.x + b.w / 2);
     }
@@ -382,7 +441,7 @@ export class World {
         if (r.wall || q.y > this.grid.h * TILE) q.dead = true;
       } else { q.x += q.vx * dt; q.y += q.vy * dt; }
       if (q.life <= 0) q.dead = true;
-      if (q.kind === 'icicle' || q.kind === 'pinecone' || q.kind === 'egg') {
+      if (q.kind === 'icicle' || q.kind === 'pinecone' || q.kind === 'egg' || (q.kind.startsWith('nut:') && q.vy > 0)) {
         const gy = Math.floor((q.y + q.h) / TILE);
         if (this.grid.solid(Math.floor((q.x + q.w / 2) / TILE), gy)) { q.dead = true; this.puff('poof', q.x + q.w / 2, q.y + q.h, 5); this.ev('break'); }
       }
@@ -453,7 +512,7 @@ export class World {
     bo.t += dt; bo.frame += dt;
     if (!bo.awake) { b.vy = Math.min(PHYS.maxFall, b.vy + PHYS.gravity * dt); moveBody(b, dt, this.grid); return; }
     if (bo.state === 'defeat') { bo.dead += dt; b.vy += PHYS.gravity * dt * 0.5; b.y += b.vy * dt; b.x += bo.dir * -20 * dt; return; }
-    const speedUp = 1 + (bo.max - bo.hp) * 0.15;
+    const speedUp = 1.1 + (bo.max - bo.hp) * 0.12;
     const left = this.arenaX + 4, right = this.arenaX + 20 * TILE - b.w - 4;
     const toward = (p.b.x + p.b.w / 2 < b.x + b.w / 2 ? -1 : 1) as 1 | -1;
     const fly = bo.kind === 'crow' || bo.kind === 'bat';
@@ -573,7 +632,7 @@ export class World {
     if (overlap(p.b, { x: b.x + 3, y: b.y + 2, w: b.w - 6, h: b.h - 2 })) {
       const fromTop = p.b.vy > 30 && p.b.y + p.b.h - b.y < 12;
       if (fromTop) {
-        p.b.vy = -PHYS.jump * 0.95; p.cut = false;
+        p.b.vy = -PHYS.jump * 0.95; p.cut = false; p.air = 1;
         if (bo.mode === 'stun' && bo.inv <= 0) this.hitBoss(bo); else this.ev('bonk');
       } else if (bo.mode !== 'stun' && bo.inv <= 0) this.hurt(b.x + b.w / 2);
     }

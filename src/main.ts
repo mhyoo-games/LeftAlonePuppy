@@ -1,5 +1,5 @@
 // 홀로 남은 강아지 — 화면 흐름: 제목 → 이야기 → 지도 ⇄ 스테이지 → 클리어 → … → 엔딩
-import { STAGES, STORY } from './core/levels.ts';
+import { STAGES, STORY, CHUNKS } from './core/levels.ts';
 import { parseSave, newSave, clearStage, unlocked, type Save } from './core/save.ts';
 import { World } from './game/world.ts';
 import { VW, VH, loadSheet, drawBackground, drawTiles, drawThings, drawWeather, drawHud } from './gfx/render.ts';
@@ -202,7 +202,7 @@ cv.addEventListener('pointerdown', (e) => {
         return;
       }
     }
-    if (y > VH - 46) ctl.press('ok');
+    if (y > VH - 58) ctl.press('ok');
     return;
   }
   if (screen === 'title') {
@@ -260,7 +260,7 @@ if (new URLSearchParams(location.search).has('dev')) {
     setSave(s: Partial<Save>) { save = { ...newSave(), ...s }; storeSave(); },
     play(i: number) { startStage(i); }, map(i: number) { openMap(i, i); }, go, press: (b: Parameters<Controls['press']>[0]) => ctl.press(b),
     story(n: number) { line = n; lt = 2; go('story'); }, ending(n: number) { line = n; lt = 2; go('ending'); },
-    frame,
+    frame, chunkW: (k: string) => CHUNKS[k].g.length,
   };
 }
 

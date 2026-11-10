@@ -149,6 +149,7 @@ export class Sound {
     const arp = (notes: number[], step: number, type: OscillatorType = 'square', vol = 0.18) => notes.forEach((n, i) => this.tone(type, hz(n), t + i * step, step * 1.1, vol, o));
     switch (name) {
       case 'jump': this.tone('square', 280, t, 0.12, 0.14, o, 620); break;
+      case 'jump2': this.tone('square', 520, t, 0.1, 0.12, o, 1040); this.tone('triangle', 780, t + 0.05, 0.1, 0.12, o, 1300); break;
       case 'bark': this.tone('square', 560, t, 0.06, 0.16, o, 420); this.tone('triangle', 330, t + 0.06, 0.1, 0.22, o, 220); this.hit(t, 'bandpass', 900, 0.08, 0.12, o); break;
       case 'bone': arp([88, 93], 0.06, 'square', 0.12); break;
       case 'heart': arp([72, 76, 79, 84], 0.06, 'triangle', 0.22); break;
@@ -171,6 +172,8 @@ export class Sound {
       case 'win': arp([72, 76, 79, 84, 79, 84, 88], 0.11, 'square', 0.18); break;
       case 'dead': arp([67, 64, 60, 55], 0.14, 'triangle', 0.25); break;
       case 'respawn': arp([60, 64, 67], 0.07, 'triangle', 0.2); break;
+      case 'throw': this.tone('triangle', 500, t, 0.08, 0.1, o, 300); break;
+      case 'swoop': this.tone('sawtooth', 900, t, 0.18, 0.06, o, 400); break;
       case 'select': this.tone('square', 660, t, 0.05, 0.1, o); break;
       case 'ok': arp([72, 79], 0.06, 'square', 0.14); break;
       case 'step': this.hit(t, 'lowpass', 600, 0.04, 0.1, o); break;

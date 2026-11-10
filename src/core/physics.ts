@@ -11,6 +11,7 @@ export const PHYS = {
   iceFriction: 140,   // 얼음
   iceAccel: 260,
   jump: 318,          // 점프 처음 속도 → 약 3칸
+  jump2: 290,         // 공중에서 한 번 더 (2단 점프) → 약 2.7칸 더
   jumpCut: 0.42,      // 일찍 떼면 이만큼만 (짧은 점프)
   spring: 500,        // 스프링 → 약 8칸
   coyote: 0.09,       // 발판을 막 벗어나도 점프 되는 시간
@@ -71,7 +72,10 @@ export function overlap(a: { x: number; y: number; w: number; h: number }, b: { 
 }
 
 /** 점프로 오를 수 있는 최대 높이(px)와 같은 높이로 건너는 최대 거리(px) — 맵 검사용 */
-export function jumpReach(): { up: number; across: number } {
+export function jumpReach(): { up: number; across: number; up2: number; across2: number } {
   const t = PHYS.jump / PHYS.gravity;
-  return { up: (PHYS.jump * PHYS.jump) / (2 * PHYS.gravity), across: 2 * t * PHYS.run };
+  const up = (PHYS.jump * PHYS.jump) / (2 * PHYS.gravity), up2 = up + (PHYS.jump2 * PHYS.jump2) / (2 * PHYS.gravity);
+  // 2단: 꼭대기에서 한 번 더 → 오르는 시간 + 다시 오르는 시간 + 처음 높이까지 떨어지는 시간
+  const t2 = t + PHYS.jump2 / PHYS.gravity + Math.sqrt((2 * up2) / PHYS.gravity);
+  return { up, across: 2 * t * PHYS.run, up2, across2: t2 * PHYS.run };
 }

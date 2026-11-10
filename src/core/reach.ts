@@ -2,7 +2,8 @@
 // 실제 물리보다 조금 보수적으로 잡는다 → 테스트를 통과한 맵은 사람이 깰 수 있다.
 import type { Grid } from './map.ts';
 
-export const REACH = { rise: 2, across: 4, springRise: 7, springAcross: 5, platformRange: 3 };
+// 2단 점프 기준 (실제: 약 5.9칸 높이·7.4칸 거리). 높이 오를수록 옆으로는 덜 간다.
+export const REACH = { rise: 4, across: 6, springRise: 8, springAcross: 6, platformRange: 3 };
 
 function key(x: number, y: number): number { return y * 10000 + x; }
 
@@ -54,8 +55,8 @@ export function reachable(g: Grid, sx: number, sy: number): Set<number> {
     let head = 0;
     while (head < rise && clear(x, y - head - 1)) head++;
     for (let ty = y - head; ty <= Math.min(g.h - 1, y + 10); ty++) {
-      const down = Math.max(0, ty - y);
-      const reach = across + Math.floor(down / 2);
+      const down = Math.max(0, ty - y), up = Math.max(0, y - ty);
+      const reach = across + Math.floor(down / 2) - Math.ceil(up / 2);
       for (let tx = x - reach; tx <= x + reach; tx++) {
         if (tx === x && ty === y) continue;
         if (!canStand(tx, ty)) continue;

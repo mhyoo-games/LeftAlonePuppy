@@ -61,7 +61,7 @@ export function drawTitle(g: CanvasRenderingContext2D, pup: PupSprites, t: numbe
     if (on) { const b = frames('bone')[0]; g.drawImage(b.r, VW / 2 - 52, y - 4); }
     txt(g, m, VW / 2, y, on ? '#ffe36b' : '#ffffff', 'center');
   });
-  txt(g, ui.touch ? '◀▶ 이동  점프  멍!  ▼+점프 내려가기' : '←→ 이동  Z 점프  X 멍!  ↓+Z 내려가기', VW / 2, VH - 8, '#fff4de', 'center', 12);
+  txt(g, ui.touch ? '◀▶ 이동  점프(공중에서 한 번 더)  멍!' : '←→ 이동  Z 점프(2단)  X 멍!  ↓+Z 내려가기', VW / 2, VH - 8, '#fff4de', 'center', 12);
 }
 
 // ── 처음 이야기 ──
@@ -97,7 +97,7 @@ export function drawStory(g: CanvasRenderingContext2D, pup: PupSprites, line: nu
 }
 
 // ── 지도 ──
-export const MAP = { x0: 18, w: 284, y0: 26, h: 104 };
+export const MAP = { x0: 18, w: 284, y0: 28, h: 88 };
 export const nodePos = (i: number): [number, number] => [MAP.x0 + STAGES[i].map[0] * MAP.w, MAP.y0 + STAGES[i].map[1] * MAP.h];
 
 /** 지도 배경 (한 번 그려 두고 다시 씀) */
@@ -182,15 +182,19 @@ export function drawMap(g: CanvasRenderingContext2D, pup: PupSprites, save: Save
   for (let i = 0; i < 8; i++) { g.globalAlpha = save.memories[i] ? 1 : 0.25; g.drawImage(frames('memory')[0].r, 32 + i * 10, 5); }
   g.globalAlpha = 1;
   const bone = frames('bone')[0]; panel(g, VW - 58, 3, 54, 18); g.drawImage(bone.r, VW - 52, 9); txt(g, String(save.bones), VW - 36, 12, '#fff4de');
-  // 아래: 고른 곳
+  // 아래: 고른 곳 (이름 / 소개 최대 2줄 / 추억·뼈다귀 — 줄이 겹치지 않게 칸을 나눔)
   const st = STAGES[v.sel];
-  panel(g, 4, VH - 46, VW - 8, 43);
-  txt(g, `${st.id}. ${st.name}`, 12, VH - 37, '#ffe36b');
-  txt(g, `보스: ${st.bossName}`, VW - 12, VH - 37, '#ffb3b3', 'right');
-  para(g, st.intro, 12, VH - 22, VW - 30, '#ffffff', 'left', 13);
-  const mem = save.memories[v.sel] ? `추억: ${st.memory}` : '추억: ???';
-  if (!moving && blinkOn(t)) txt(g, go('출발'), VW - 12, VH - 9, '#ffe36b', 'right');
-  txt(g, mem + (save.best[v.sel] ? `   뼈다귀 최고 ${save.best[v.sel]}` : ''), 12, VH - 9, '#c6e58d');
+  const top = VH - 58;
+  panel(g, 4, top, VW - 8, 55);
+  txt(g, `${st.id}. ${st.name}`, 12, top + 9, '#ffe36b');
+  txt(g, `보스: ${st.bossName}`, VW - 12, top + 9, '#ffb3b3', 'right');
+  wrap(g, st.intro, VW - 30).slice(0, 2).forEach((l, i) => txt(g, l, 12, top + 23 + i * 12, '#ffffff', 'left'));
+  g.fillStyle = 'rgba(255,255,255,0.15)'; g.fillRect(10, top + 40, VW - 20, 1);
+  const found = save.memories[v.sel];
+  g.globalAlpha = found ? 1 : 0.35; g.drawImage(frames('memory')[0].r, 10, top + 42); g.globalAlpha = 1;
+  txt(g, found ? st.memory : '아직 못 찾음', 27, top + 48, found ? '#ffcf4a' : '#b7a59a');
+  if (save.best[v.sel]) { g.drawImage(frames('bone')[0].r, 118, top + 45); txt(g, `최고 ${save.best[v.sel]}`, 133, top + 48, '#fff4de'); }
+  if (!moving && blinkOn(t)) txt(g, go('출발'), VW - 12, top + 48, '#ffe36b', 'right');
 }
 
 // ── 스테이지 클리어 ──

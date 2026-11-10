@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Grid, assemble, ROWS, TILE } from '../src/core/map.ts';
 import { STAGES, CHUNKS, stageRows, arenaStart } from '../src/core/levels.ts';
-import { reachable, grabbable, cellKey, standable } from '../src/core/reach.ts';
+import { reachable, grabbable, cellKey, standable, REACH } from '../src/core/reach.ts';
 import { moveBody, jumpReach, PHYS, type Body } from '../src/core/physics.ts';
 import { parseSave, clearStage, newSave, unlocked } from '../src/core/save.ts';
 
@@ -24,6 +24,27 @@ test('점프 물리: 2칸은 넉넉히 오르고, 구덩이 3칸은 건넌다', 
   assert.ok(up > TILE * 2.6 && up < TILE * 4, String(up));
   assert.ok(across > TILE * 4, String(across));
   assert.ok(PHYS.spring ** 2 / (2 * PHYS.gravity) > TILE * 7.2, '스프링은 7칸 넘게');
+});
+
+test('2단 점프: 맵 검사(REACH)보다 실제로 더 높이·멀리 간다', () => {
+  const { up2, across2 } = jumpReach();
+  assert.ok(up2 > TILE * (REACH.rise + 1), `높이 ${up2}`);
+  assert.ok(across2 > TILE * (REACH.across + 1), `거리 ${across2}`);
+});
+
+test('2단 점프: 공중에서 한 번만, 땅에 닿으면 다시', () => {
+  const w = new World(0);
+  const idle = { left: false, right: false, down: false, jump: false, jumpPressed: false, barkPressed: false };
+  for (let k = 0; k < 60; k++) w.update(1 / 60, idle);
+  const press = { ...idle, jump: true, jumpPressed: true }, hold = { ...idle, jump: true };
+  const y0 = w.p.b.y;
+  w.update(1 / 60, press); for (let k = 0; k < 18; k++) w.update(1 / 60, hold);
+  w.update(1 / 60, press); assert.equal(w.p.air, 0); assert.ok(w.p.b.vy < -200, '두 번째 점프');
+  let top = w.p.b.y; for (let k = 0; k < 25; k++) { w.update(1 / 60, hold); top = Math.min(top, w.p.b.y); }
+  assert.ok(y0 - top > TILE * 4.5, `2단 점프 높이 ${y0 - top}`);
+  const vy = w.p.b.vy; w.update(1 / 60, press); assert.ok(w.p.b.vy >= vy, '세 번째는 안 됨');
+  for (let k = 0; k < 120; k++) w.update(1 / 60, idle);
+  assert.equal(w.p.air, 1);
 });
 
 test('충돌: 떨어지면 땅 위에 서고, 벽을 뚫지 않는다', () => {
@@ -143,4 +164,28 @@ test('간단한 봇도 보스 8마리를 모두 이길 수 있다 (너무 어렵
     const tries = [botFight(i), botFight(i), botFight(i)];
     assert.ok(tries.some((r) => r.won), `${STAGES[i].bossName}: 봇이 한 번도 못 이김`);
   }
+});
+
+test('적: 걷는 적은 콩이를 보면 쫓아오고, 던지는 적은 던지고, 짖으면 던진 것을 튕겨 낸다', () => {
+  const idle = { left: false, right: false, down: false, jump: false, jumpPressed: false, barkPressed: false };
+  const w = new World(0);
+  for (let k = 0; k < 30; k++) w.update(1 / 60, idle);
+  // 걷는 적을 콩이 옆에 둔다
+  const e = w.enemies.find((x) => x.kind === 'w')!;
+  e.b.x = w.p.b.x + 60; e.b.y = w.p.b.y + w.p.b.h - e.b.h; e.state = 'go'; e.alert = 0;
+  for (let k = 0; k < 40; k++) w.update(1 / 60, idle);
+  assert.equal(e.state, 'chase');
+  assert.ok(e.b.x < w.p.b.x + 60, '다가옴');
+  // 던지는 적
+  const t = new World(1);
+  for (let k = 0; k < 30; k++) t.update(1 / 60, idle);
+  const th = t.enemies.find((x) => x.kind === 't')!;
+  t.p.b.x = th.b.x - 100; t.p.b.y = th.b.y; t.p.inv = 99; th.t = 3;
+  for (let k = 0; k < 5; k++) t.update(1 / 60, idle);
+  const nut = t.proj.find((q) => q.kind.startsWith('nut:'));
+  assert.ok(nut, '던짐');
+  nut!.x = t.p.b.x + t.p.b.w + 8; nut!.y = t.p.b.y; nut!.vx = 0; nut!.vy = 0; nut!.grav = 0;
+  t.p.dir = 1; t.p.barkCd = 0;
+  t.update(1 / 60, { ...idle, barkPressed: true });
+  assert.ok(!t.proj.some((q) => q === nut), '짖어서 튕겨 냄');
 });
