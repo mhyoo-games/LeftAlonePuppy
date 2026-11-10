@@ -5,7 +5,7 @@
 ## 무엇인가
 
 농장에 홀로 남은 아기 강아지 콩이가 주인 하나를 찾아 떠나는 웹 횡스크롤 모험 (8 스테이지, 스테이지마다 기믹과 보스, 사이에 지도).
-GitHub Pages(`https://minhyuk94.github.io/LeftAlonePuppy/`, 저장소 이름대로 대문자)에 올린다.
+GitHub Pages(`https://mhyoo-games.github.io/LeftAlonePuppy/`, 조직 mhyoo-games, 저장소 이름대로 대문자)에 올린다.
 
 ## 지킬 것
 
@@ -18,6 +18,7 @@ GitHub Pages(`https://minhyuk94.github.io/LeftAlonePuppy/`, 저장소 이름대�
 - 저장은 localStorage `lap_save` 하나 (`src/core/save.ts`의 `parseSave`가 망가진 값도 받아 준다).
 - 휴대폰: 터치 버튼(`index.html`의 `#pad`), 세로면 화면 위·버튼 아래, 안전 영역을 피한다.
 - CI(`ci.yml`): 테스트 → 타입 검사 → 빌드 → headless Chrome으로 켜지는지(`scripts/smoke.mjs`) → Pages 배포.
+- 예전 주소(`minhyuk94.github.io/…`)에서 옮겨 올 때 저장을 받아 넣는 `carry.js`(예전 주소의 안내 페이지가 `#carry=`로 보냄)를 `<head>` 맨 앞에서 읽는다. 지우지 않는다.
 - 큰 기능이 바뀌면 이력서 저장소(minhyuk94.github.io)의 `games` 카드도 ko/ja/en으로 맞춘다. 소스 코드·저장소 링크는 이력서에 넣지 않는다.
 
 ## 이 작업 환경에서 돌려 보기
