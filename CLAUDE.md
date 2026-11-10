@@ -5,7 +5,7 @@
 ## 무엇인가
 
 농장에 홀로 남은 아기 강아지 콩이가 주인 하나를 찾아 떠나는 웹 횡스크롤 모험 (8 스테이지, 스테이지마다 기믹과 보스, 사이에 지도).
-GitHub Pages(`https://minhyuk94.github.io/leftalonepuppy/`)에 올린다.
+GitHub Pages(`https://minhyuk94.github.io/LeftAlonePuppy/`, 저장소 이름대로 대문자)에 올린다.
 
 ## 지킬 것
 
