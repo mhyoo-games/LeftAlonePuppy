@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3f2631">
+<title>홀로 남은 강아지</title>
+<meta name="description" content="농장에 홀로 남은 아기 강아지 콩이가 주인 하나를 찾아 떠나는 횡스크롤 모험">
+<style>
+  @font-face { font-family: Galmuri; src: url(assets/fonts/Galmuri11.woff2) format('woff2'); font-weight: normal; }
+  @font-face { font-family: Galmuri; src: url(assets/fonts/Galmuri11-Bold.woff2) format('woff2'); font-weight: bold; }
+  html, body { margin: 0; height: 100%; background: #2a1a24; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: Galmuri, sans-serif; color: #fff4de;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing: border-box; }
+  #game { image-rendering: pixelated; image-rendering: crisp-edges; display: block; background: #000; }
+  #fs { position: fixed; top: calc(6px + env(safe-area-inset-top)); right: calc(6px + env(safe-area-inset-right)); z-index: 5;
+    font: 14px Galmuri, sans-serif; background: rgba(63,38,49,.7); color: #fff4de; border: 2px solid #3f2631; border-radius: 6px; padding: 4px 8px; }
+  #pad { display: none; }
+  body.touch #pad { display: flex; }
+  #pad { position: fixed; left: 0; right: 0; bottom: 0; justify-content: space-between; align-items: flex-end; pointer-events: none;
+    padding: 0 calc(14px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); }
+  #pad .grp { display: flex; gap: 10px; align-items: flex-end; pointer-events: none; }
+  #pad button { pointer-events: auto; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #3f2631; background: rgba(255,244,222,.32);
+    color: #fff4de; font: bold 18px Galmuri, sans-serif; text-shadow: 0 0 3px #3f2631, 1px 1px 0 #3f2631; touch-action: none; padding: 0; }
+  #pad button.on { background: rgba(255,227,107,.6); }
+  #pad .big { width: 76px; height: 76px; }
+  #pad .pause { position: fixed; top: calc(6px + env(safe-area-inset-top)); left: calc(50% - 22px); width: 44px; height: 32px; border-radius: 8px; font-size: 14px; }
+  body:not([data-screen=play]) #pad .act, body:not([data-screen=play]) #pad .pause { visibility: hidden; }
+  body:not([data-screen=play]):not([data-screen=map]):not([data-screen=title]):not([data-screen=pause]) #pad .dir { visibility: hidden; }
+  /* 세로: 위에 화면, 아래에 큰 버튼 */
+  body.portrait { justify-content: flex-start; padding-top: calc(40px + env(safe-area-inset-top)); }
+  body.portrait.touch #pad { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+  body.portrait #pad button { width: 72px; height: 72px; }
+  body.portrait #pad .big { width: 92px; height: 92px; }
+  body.portrait #pad .act { flex-direction: column; align-items: center; gap: 14px; }
+  body.portrait #pad .pause { width: 48px; height: 34px; }
+</style>
+</head>
+<body>
+<canvas id="game" width="320" height="180"></canvas>
+<button id="fs" title="전체 화면">⛶</button>
+<div id="pad">
+  <div class="grp dir">
+    <button data-btn="left">◀</button>
+    <button data-btn="down">▼</button>
+    <button data-btn="right">▶</button>
+  </div>
+  <div class="grp act">
+    <button data-btn="bark">멍!</button>
+    <button class="big" data-btn="jump">점프</button>
+  </div>
+  <button class="pause" data-btn="back">II</button>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>
